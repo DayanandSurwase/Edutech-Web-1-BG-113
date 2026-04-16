@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyPro — Feature Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #22D3EE 100%);
+    padding: 48px 48px 40px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 1px, transparent 1px),
+                      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .header-inner { position: relative; z-index: 1; }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 100px;
+    margin-bottom: 16px;
+  }
+  .header h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .header p { font-size: 14px; color: rgba(255,255,255,0.75); max-width: 520px; }
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+  }
+  .meta-item {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-align: center;
+  }
+  .meta-item .val { font-size: 20px; font-weight: 700; }
+  .meta-item .lbl { font-size: 10px; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  /* Body */
+  .body { padding: 40px 48px 48px; }
+
+  .note {
+    background: #f0f4ff;
+    border-left: 3px solid #4F46E5;
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #4338ca;
+    margin-bottom: 36px;
+  }
+  .note strong { font-weight: 600; }
+
+  /* Section */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .section-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .section-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 100px;
+  }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead tr { background: #f8fafc; }
+  thead th {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; width: 22%; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 9px 12px; color: #334155; vertical-align: top; }
+  tbody td:first-child { font-weight: 600; color: #1e293b; }
+  .static-col { color: #64748b; }
+  .dynamic-col { color: #4338ca; font-weight: 500; }
+
+  .chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+    margin-right: 4px;
+  }
+  .chip-static { background: #f1f5f9; color: #64748b; }
+  .chip-dynamic { background: #ede9fe; color: #6d28d9; }
+
+  /* Prompts */
+  .prompts { margin-top: 40px; }
+  .prompts-title {
+    font-size: 15px; font-weight: 700; color: #0f172a;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .prompt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .prompt-card {
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+  }
+  .prompt-card:nth-child(1) { border-color: #c7d2fe; background: #eef2ff; }
+  .prompt-card:nth-child(2) { border-color: #a5f3fc; background: #ecfeff; }
+  .prompt-card:nth-child(3) { border-color: #ddd6fe; background: #f5f3ff; }
+  .prompt-card:nth-child(4) { border-color: #fde68a; background: #fffbeb; }
+  .prompt-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; margin-bottom: 6px;
+  }
+  .prompt-card:nth-child(1) .prompt-label { color: #4338ca; }
+  .prompt-card:nth-child(2) .prompt-label { color: #0891b2; }
+  .prompt-card:nth-child(3) .prompt-label { color: #7c3aed; }
+  .prompt-card:nth-child(4) .prompt-label { color: #d97706; }
+  .prompt-text { font-size: 12px; color: #334155; line-height: 1.5; }
+
+  /* Footer */
+  .footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .footer strong { color: #4F46E5; }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; border-radius: 0; box-shadow: none; }
+    @page { margin: 0; size: A4; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="badge">Technical Documentation</div>
+      <h1>Feature Roadmap</h1>
+      <p>A structured overview of all static frontend features and their planned dynamic equivalents when a backend is integrated.</p>
+      <div class="header-meta">
+        <div class="meta-item"><div class="val">8</div><div class="lbl">Categories</div></div>
+        <div class="meta-item"><div class="val">40+</div><div class="lbl">Features</div></div>
+        <div class="meta-item"><div class="val">4</div><div class="lbl">Dev Prompts</div></div>
+        <div class="meta-item"><div class="val">React</div><div class="lbl">Tech Stack</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <div class="note">
+      <strong>Current State:</strong> Frontend-only (React + Vite + Tailwind). All data lives in local state and resets on refresh. &nbsp;|&nbsp;
+      <strong>Future State:</strong> Connect a REST API or Firebase to make every feature persistent and real-time.
+    </div>
+
+    <!-- Auth -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#eef2ff;">🔐</div>
+        <span class="section-title">Authentication</span>
+        <span class="section-count">6 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Login form</td><td class="static-col">UI only, no real validation</td><td class="dynamic-col">JWT / session auth via API</td></tr>
+          <tr><td>Signup form</td><td class="static-col">Stores in React state</td><td class="dynamic-col">Creates user record in DB</td></tr>
+          <tr><td>Google / GitHub login</td><td class="static-col">Button UI only</td><td class="dynamic-col">OAuth 2.0 integration</td></tr>
+          <tr><td>Forgot password</td><td class="static-col">Shows success UI only</td><td class="dynamic-col">Sends real reset email via SMTP</td></tr>
+          <tr><td>Profile picture upload</td><td class="static-col">Preview via object URL</td><td class="dynamic-col">Upload to S3 / Cloudinary</td></tr>
+          <tr><td>Remember me</td><td class="static-col">Checkbox UI only</td><td class="dynamic-col">Persistent session / refresh token</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#ecfeff;">📊</div>
+        <span class="section-title">Dashboard</span>
+        <span class="section-count">5 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Welcome message</td><td class="static-col">Hardcoded dummy user name</td><td class="dynamic-col">Fetched from auth session</td></tr>
+          <tr><td>Stat cards</td><td class="static-col">Hardcoded values</td><td class="dynamic-col">Calculated from user activity logs</td></tr>
+          <tr><td>Weekly study chart</td><td class="static-col">Static dummy data array</td><td class="dynamic-col">Aggregated from session records</td></tr>
+          <tr><td>Motivational quote</td><td class="static-col">Hardcoded string</td><td class="dynamic-col">Random quote from quotes API or DB</td></tr>
+          <tr><td>Recommended skills</td><td class="static-col">Static card list</td><td class="dynamic-col">Personalized via interests + ML model</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Progress -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f5f3ff;">📈</div>
+        <span class="section-title">Progress Tracking</span>
+        <span class="section-count">5 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Subject progress bars</td><td class="static-col">Local state sliders</td><td class="dynamic-col">Saved per user in DB</td></tr>
+          <tr><td>Circular indicators</td><td class="static-col">Dummy percentages</td><td class="dynamic-col">Computed from completed tasks</td></tr>
+          <tr><td>Performance bar chart</td><td class="static-col">Static subject scores</td><td class="dynamic-col">Real scores from assessments</td></tr>
+          <tr><td>Analytics cards</td><td class="static-col">Hardcoded numbers</td><td class="dynamic-col">Derived from activity history</td></tr>
+          <tr><td>Streak tracker</td><td class="static-col">Fixed value in context</td><td class="dynamic-col">Calculated from daily login/study logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Goals -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f0fdf4;">🎯</div>
+        <span class="section-title">Goal Tracker</span>
+        <span class="section-count">5 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Add goal</td><td class="static-col">Adds to React state only</td><td class="dynamic-col">POST to goals API, stored in DB</td></tr>
+          <tr><td>Mark complete</td><td class="static-col">Toggles local state</td><td class="dynamic-col">PATCH request updates DB record</td></tr>
+          <tr><td>Delete goal</td><td class="static-col">Removes from local state</td><td class="dynamic-col">DELETE request to API</td></tr>
+          <tr><td>Progress bar</td><td class="static-col">Computed from local array</td><td class="dynamic-col">Synced with server-side goal data</td></tr>
+          <tr><td>Goals list</td><td class="static-col">Resets on page refresh</td><td class="dynamic-col">Persisted per user account</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Planner -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fff7ed;">📅</div>
+        <span class="section-title">Study Planner</span>
+        <span class="section-count">4 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Calendar view</td><td class="static-col">Highlights hardcoded dates</td><td class="dynamic-col">Fetches sessions from DB</td></tr>
+          <tr><td>Add study session</td><td class="static-col">Adds to local state</td><td class="dynamic-col">POST to sessions API</td></tr>
+          <tr><td>Session list</td><td class="static-col">Dummy + local state</td><td class="dynamic-col">Fetched and filtered by user/date</td></tr>
+          <tr><td>Duration tracking</td><td class="static-col">UI input only</td><td class="dynamic-col">Stored and aggregated for analytics</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Practice -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fdf4ff;">🧠</div>
+        <span class="section-title">Practice Zone</span>
+        <span class="section-count">4 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Problem input</td><td class="static-col">Text area, no evaluation</td><td class="dynamic-col">Sent to code execution API (Judge0)</td></tr>
+          <tr><td>Submit button</td><td class="static-col">Shows "backend needed" notice</td><td class="dynamic-col">Triggers evaluation, returns result</td></tr>
+          <tr><td>Sample problems</td><td class="static-col">Hardcoded list</td><td class="dynamic-col">Fetched from problems DB with filters</td></tr>
+          <tr><td>Difficulty badges</td><td class="static-col">Static labels</td><td class="dynamic-col">Tied to real problem metadata</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Profile -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f0f9ff;">👤</div>
+        <span class="section-title">Profile</span>
+        <span class="section-count">5 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Edit name / email</td><td class="static-col">Updates local context only</td><td class="dynamic-col">PATCH to user profile API</td></tr>
+          <tr><td>Skill level selector</td><td class="static-col">Stored in React state</td><td class="dynamic-col">Saved to user record in DB</td></tr>
+          <tr><td>Interests chips</td><td class="static-col">Local state toggle</td><td class="dynamic-col">Persisted, used for recommendations</td></tr>
+          <tr><td>Avatar upload</td><td class="static-col">Preview only (object URL)</td><td class="dynamic-col">Uploaded to cloud storage</td></tr>
+          <tr><td>Theme preference</td><td class="static-col">React state, resets on refresh</td><td class="dynamic-col">Saved to user preferences in DB</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Notifications & UI -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fff1f2;">🔔</div>
+        <span class="section-title">Notifications &amp; UI/UX</span>
+        <span class="section-count">7 features</span>
+      </div>
+      <table>
+        <thead><tr><th>Feature</th><th><span class="chip chip-static">Static</span> Current</th><th><span class="chip chip-dynamic">Dynamic</span> With Backend</th></tr></thead>
+        <tbody>
+          <tr><td>Notification panel</td><td class="static-col">Hardcoded static messages</td><td class="dynamic-col">Real-time via WebSocket or polling</td></tr>
+          <tr><td>Mark all read</td><td class="static-col">Toggles local state</td><td class="dynamic-col">PATCH to notifications API</td></tr>
+          <tr><td>Unread badge count</td><td class="static-col">Counted from local array</td><td class="dynamic-col">Server-driven unread count</td></tr>
+          <tr><td>Toast notifications</td><td class="static-col">Triggered by UI actions only</td><td class="dynamic-col">Triggered by API success/error responses</td></tr>
+          <tr><td>Loading skeletons</td><td class="static-col">Not wired to real loading state</td><td class="dynamic-col">Shown during actual API fetch</td></tr>
+          <tr><td>Empty states</td><td class="static-col">Always visible (no data)</td><td class="dynamic-col">Shown only when API returns empty</td></tr>
+          <tr><td>Dark / light theme</td><td class="static-col">React state, resets on refresh</td><td class="dynamic-col">Persisted in user preferences</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Backend Prompts -->
+    <div class="prompts">
+      <div class="prompts-title">🔌 Backend Integration Prompts</div>
+      <div class="prompt-grid">
+        <div class="prompt-card">
+          <div class="prompt-label">Prompt 1 — Basic</div>
+          <div class="prompt-text">Build an authentication system (login/signup) and connect it with the existing frontend forms.</div>
+        </div>
+        <div class="prompt-card">
+          <div class="prompt-label">Prompt 2 — Intermediate</div>
+          <div class="prompt-text">Create REST APIs to store user goals and fetch them dynamically in the dashboard.</div>
+        </div>
+        <div class="prompt-card">
+          <div class="prompt-label">Prompt 3 — Advanced</div>
+          <div class="prompt-text">Implement a recommendation system based on user interests and display results on the dashboard.</div>
+        </div>
+        <div class="prompt-card">
+          <div class="prompt-label">Prompt 4 — Hard</div>
+          <div class="prompt-text">Persist study planner session data and sync it with the calendar UI in real time.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span><strong>StudyPro</strong> — EdTech Frontend Project</span>
+    <span>Built with React + Vite + Tailwind CSS</span>
+    <span>Frontend-only · All data resets on refresh</span>
+  </div>
+
+</div>
+</body>
+</html>
