@@ -372,6 +372,9 @@ This platform demonstrates a **complete transformation from a frontend prototype
 
 ---
 
+## Tools used
+ChatGPT
+
 ## 🤝 Contribution
 
 This project is open for learning, hackathons, and development.
