@@ -379,12 +379,39 @@ function renderGoals() {
     </div>`;
 }
 
-window.toggleGoal = (id) => { state.goals = state.goals.map(g => g.id === id ? {...g, done: !g.done} : g); render(); };
-window.removeGoal = (id) => { state.goals = state.goals.filter(g => g.id !== id); toast('Goal removed', 'info'); render(); };
-window.addGoal = () => { 
-    if(!state.goalsForm.text.trim()) return; 
-    state.goals.push({id: Date.now(), text: state.goalsForm.text, done: false}); 
-    state.goalsForm.text = ''; state.goalsForm.modalOpen = false; toast('Goal added!'); render(); 
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    return fetch(url, { ...options, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, ...(options.headers || {}) } });
+}
+
+async function loadGoals() {
+    try {
+        const res = await authFetch('http://127.0.0.1:8000/goals');
+        if (!res.ok) return;
+        state.goals = await res.json();
+        render();
+    } catch (e) {}
+}
+
+window.toggleGoal = async (id) => {
+    const goal = state.goals.find(g => g.id === id);
+    if (!goal) return;
+    await authFetch(`http://127.0.0.1:8000/goals/${id}`, { method: 'PATCH', body: JSON.stringify({ done: !goal.done }) });
+    await loadGoals();
+};
+
+window.removeGoal = async (id) => {
+    await authFetch(`http://127.0.0.1:8000/goals/${id}`, { method: 'DELETE' });
+    state.goals = state.goals.filter(g => g.id !== id);
+    toast('Goal removed', 'info'); render();
+};
+
+window.addGoal = async () => {
+    if (!state.goalsForm.text.trim()) return;
+    const res = await authFetch('http://127.0.0.1:8000/goals', { method: 'POST', body: JSON.stringify({ text: state.goalsForm.text }) });
+    const newGoal = await res.json();
+    state.goals.push(newGoal);
+    state.goalsForm.text = ''; state.goalsForm.modalOpen = false; toast('Goal added!'); render();
 };
 
 function renderPlanner() {
@@ -694,10 +721,27 @@ function renderLoginPage() {
       </div>
     </div>`;
 }
-window.handleLogin = (e) => {
+window.handleLogin = async (e) => {
     e.preventDefault();
     state.loginForm.loading = true; render();
-    setTimeout(() => { state.loginForm.loading = false; toast('Welcome back!'); state.page = 'app'; render(); }, 800);
+    try {
+        const res = await fetch('http://127.0.0.1:8000/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: state.loginForm.email, password: state.loginForm.password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+        localStorage.setItem('token', data.token);
+        state.user.name = data.name || state.user.name;
+        toast('Welcome back!');
+        state.page = 'app';
+        await loadGoals();
+    } catch (err) {
+        toast(err.message, 'error');
+    } finally {
+        state.loginForm.loading = false; render();
+    }
 };
 
 function renderSignupPage() {
@@ -719,10 +763,25 @@ function renderSignupPage() {
       </div>
     </div>`;
 }
-window.handleSignup = (e) => {
+window.handleSignup = async (e) => {
     e.preventDefault();
     state.signupForm.loading = true; render();
-    setTimeout(() => { state.signupForm.loading = false; state.user.name = state.signupForm.name || state.user.name; toast('Account created!'); state.page = 'app'; render(); }, 800);
+    try {
+        const res = await fetch('http://127.0.0.1:8000/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: state.signupForm.name, email: state.signupForm.email, password: state.signupForm.password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Signup failed');
+        state.user.name = state.signupForm.name;
+        toast('Account created!');
+        state.page = 'login';
+    } catch (err) {
+        toast(err.message, 'error');
+    } finally {
+        state.signupForm.loading = false; render();
+    }
 }
 
 function renderForgotPage() {
