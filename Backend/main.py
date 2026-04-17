@@ -1,15 +1,23 @@
 import os
 import uuid
 import requests as http_requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from typing import List, Any
+from groq import Groq
 import firebase_config
 from firebase_admin import auth
 from firebase_config import db
 from auth import verify_token
+
+# Load Groq key from Backend/.env
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL   = os.environ.get("GROQ_MODEL", "llama3-8b-8192")
 
 app = FastAPI()
 
@@ -46,6 +54,11 @@ class Session(BaseModel):
     subject: str
     date: str
     duration: int
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Any] = []
+    context: dict = {}
 
 
 # -------- AUTH ROUTES -------- #
@@ -150,6 +163,102 @@ def delete_session(session_id: str):
     try:
         db.collection("sessions").document(session_id).delete()
         return {"message": "Deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------- AI CHAT (RAG) -------- #
+
+@app.post("/chat")
+def chat_with_ai(req: ChatRequest):
+    if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+        raise HTTPException(
+            status_code=503,
+            detail="Groq API key not configured. Add GROQ_API_KEY to Backend/.env"
+        )
+    try:
+        ctx = req.context
+
+        # Build goals text
+        goals = ctx.get("goals", [])
+        if goals:
+            goals_text = "\n".join(
+                f"  - {'[DONE]' if g.get('done') else '[PENDING]'} {g.get('text', '')}"
+                for g in goals
+            )
+        else:
+            goals_text = "  No goals set yet."
+
+        # Build progress text
+        progress = ctx.get("progress", {})
+        if progress:
+            progress_text = "\n".join(
+                f"  - {subject}: {score}%" for subject, score in progress.items()
+            )
+        else:
+            progress_text = "  No progress data yet."
+
+        # Build sessions text (fetch from Firestore)
+        try:
+            docs = db.collection("sessions").stream()
+            sessions = [doc.to_dict() for doc in docs]
+            if sessions:
+                sessions_text = "\n".join(
+                    f"  - {s.get('subject')} on {s.get('date')} ({s.get('duration')} min)"
+                    for s in sessions[:10]  
+                )
+            else:
+                sessions_text = "  No sessions planned yet."
+        except Exception:
+            sessions_text = "  Could not load sessions."
+
+        system_prompt = f"""You are StudyPro AI, a smart and encouraging personal study assistant.
+Here is the student's current data:
+
+- Name: {ctx.get('name', 'Student')}
+- Skill Level: {ctx.get('skillLevel', 'Intermediate')}
+- Interests: {', '.join(ctx.get('interests', [])) or 'Not set'}
+- Study Streak: {ctx.get('streak', 0)} days
+
+Goals:
+{goals_text}
+
+Subject Progress:
+{progress_text}
+
+Upcoming Study Sessions:
+{sessions_text}
+
+Instructions:
+- Answer based on the student's actual data shown above.
+- Be encouraging, specific, and concise (2-4 sentences unless more detail is needed).
+- If asked for a study plan, focus on weak subjects (lowest scores) and their interests.
+- Do NOT say you are an AI or mention your model name; stay in role as StudyPro AI."""
+
+        # Build Groq messages array
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Add conversation history (exclude the very last entry which is the current message)
+        for h in req.history[:-1]:
+            role = "user" if h.get("role") == "user" else "assistant"
+            messages.append({"role": role, "content": h.get("text", "")})
+
+        # Current user message
+        messages.append({"role": "user", "content": req.message})
+
+        client = Groq(api_key=GROQ_API_KEY)
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=messages,
+            max_tokens=512,
+            temperature=0.7,
+        )
+
+        reply = response.choices[0].message.content
+        return {"reply": reply}
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
