@@ -1,8 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from firebase_admin import auth
 from uuid import uuid4
+import os
 import firebase_config 
 
 # Firestore DB from your config
@@ -19,7 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------- MODELS -------- #
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "Frontend")
+
 class UserSignup(BaseModel):
     name: str
     email: str
@@ -35,7 +41,7 @@ class Session(BaseModel):
     duration: int
 
 
-# -------- AUTH ROUTES -------- #
+# Routes
 
 @app.post("/signup")
 def signup(user: UserSignup):
@@ -69,7 +75,7 @@ def login(user: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-# -------- SESSION ROUTES (FIREBASE) -------- #
+# Session Routes
 
 @app.post("/sessions")
 def create_session(session: Session):
@@ -118,7 +124,9 @@ def delete_session(session_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# -------- ROOT -------- #
+# Root / Frontend
 @app.get("/")
 def home():
-    return {"message": "API running "}
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
