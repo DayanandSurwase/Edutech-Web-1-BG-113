@@ -6,10 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from dotenv import load_dotenv
 import firebase_config
 from firebase_admin import auth
 from firebase_config import db
 from auth import verify_token
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -24,7 +27,7 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "Frontend")
 
-FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"
+FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
 
 # -------- MODELS -------- #
 class UserSignup(BaseModel):
