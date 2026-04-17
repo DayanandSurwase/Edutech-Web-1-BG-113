@@ -1,9 +1,11 @@
+import os
+import uuid
 import requests as http_requests
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional
-import uuid
 import firebase_config
 from firebase_admin import auth
 from firebase_config import db
@@ -19,9 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------- MODELS -------- #
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(BASE_DIR, "Frontend")
+
 FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"
 
+# -------- MODELS -------- #
 class UserSignup(BaseModel):
     name: str
     email: str
@@ -80,12 +85,6 @@ def login(user: UserLogin):
         raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-
-# -------- ROOT -------- #
-@app.get("/")
-def home():
-    return {"message": "API running"}
 
 
 # -------- GOALS ROUTES -------- #
@@ -153,3 +152,12 @@ def delete_session(session_id: str):
         return {"message": "Deleted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------- FRONTEND STATIC SERVING -------- #
+
+@app.get("/")
+def home():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="frontend")
