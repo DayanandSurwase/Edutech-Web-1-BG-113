@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # -------- MODELS -------- #
-FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"  # Replace with your key from Firebase Console → Project Settings
+FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"
 
 class UserSignup(BaseModel):
     name: str
@@ -37,10 +37,13 @@ class GoalCreate(BaseModel):
 class GoalUpdate(BaseModel):
     done: bool
 
+class Session(BaseModel):
+    subject: str
+    date: str
+    duration: int
 
 
-
-# -------- ROUTES -------- #
+# -------- AUTH ROUTES -------- #
 
 @app.post("/signup")
 def signup(user: UserSignup):
@@ -77,8 +80,9 @@ def login(user: UserLogin):
         raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
 
+
+# -------- ROOT -------- #
 @app.get("/")
 def home():
     return {"message": "API running"}
@@ -119,3 +123,33 @@ def delete_goal(goal_id: str, user=Depends(verify_token)):
     if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Goal not found")
     ref.delete()
+
+
+# -------- SESSION ROUTES -------- #
+
+@app.post("/sessions")
+def create_session(session: Session):
+    try:
+        data = {"subject": session.subject, "date": session.date, "duration": session.duration}
+        doc_ref = db.collection("sessions").add(data)
+        return {"id": doc_ref[1].id, **data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/sessions")
+def get_sessions():
+    try:
+        docs = db.collection("sessions").stream()
+        return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/sessions/{session_id}")
+def delete_session(session_id: str):
+    try:
+        db.collection("sessions").document(session_id).delete()
+        return {"message": "Deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
