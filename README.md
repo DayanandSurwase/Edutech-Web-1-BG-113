@@ -375,6 +375,13 @@ This platform demonstrates a **complete transformation from a frontend prototype
 ## Tools used
 ChatGPT
 
+---
+
+## Round 2 Feature
+Rag Chat Bot Implemented
+
+---
+
 ## 🤝 Contribution
 
 This project is open for learning, hackathons, and development.
