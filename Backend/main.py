@@ -1,19 +1,18 @@
-from fastapi import FastAPI, HTTPException
+import os
+import uuid
+import requests as http_requests
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import firebase_config
 from firebase_admin import auth
-from uuid import uuid4
-import os
-import firebase_config 
-
-# Firestore DB from your config
-db = firebase_config.db
+from firebase_config import db
+from auth import verify_token
 
 app = FastAPI()
 
-# -------- CORS -------- #
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,10 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "Frontend")
 
+FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"
+
+# -------- MODELS -------- #
 class UserSignup(BaseModel):
     name: str
     email: str
@@ -35,25 +36,33 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class GoalCreate(BaseModel):
+    text: str
+
+class GoalUpdate(BaseModel):
+    done: bool
+
 class Session(BaseModel):
     subject: str
     date: str
     duration: int
 
 
-# Routes
+# -------- AUTH ROUTES -------- #
 
 @app.post("/signup")
 def signup(user: UserSignup):
     try:
-        user_record = auth.create_user(
-            email=user.email,
-            password=user.password,
-            display_name=user.name
+        res = http_requests.post(
+            f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}",
+            json={"email": user.email, "password": user.password, "displayName": user.name, "returnSecureToken": True}
         )
-
-        return {"message": "User created", "uid": user_record.uid}
-
+        data = res.json()
+        if "error" in data:
+            raise HTTPException(status_code=400, detail=data["error"]["message"])
+        return {"message": "User created", "uid": data["localId"]}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -61,38 +70,68 @@ def signup(user: UserSignup):
 @app.post("/login")
 def login(user: UserLogin):
     try:
-        user_record = auth.get_user_by_email(user.email)
-
-        custom_token = auth.create_custom_token(user_record.uid)
-
+        res = http_requests.post(
+            f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}",
+            json={"email": user.email, "password": user.password, "returnSecureToken": True}
+        )
+        data = res.json()
+        if "error" in data:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
         return {
-            "token": custom_token.decode("utf-8"),
-            "name": user_record.display_name,
-            "uid": user_record.uid
+            "token": data["idToken"],
+            "name": data.get("displayName", "")
         }
-
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
-# Session Routes
+# -------- GOALS ROUTES -------- #
+
+@app.get("/goals")
+def get_goals(user=Depends(verify_token)):
+    uid = user["uid"]
+    docs = db.collection("users").document(uid).collection("goals").stream()
+    return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+
+
+@app.post("/goals", status_code=201)
+def add_goal(goal: GoalCreate, user=Depends(verify_token)):
+    uid = user["uid"]
+    goal_id = str(uuid.uuid4())
+    data = {"text": goal.text, "done": False}
+    db.collection("users").document(uid).collection("goals").document(goal_id).set(data)
+    return {"id": goal_id, **data}
+
+
+@app.patch("/goals/{goal_id}")
+def update_goal(goal_id: str, update: GoalUpdate, user=Depends(verify_token)):
+    uid = user["uid"]
+    ref = db.collection("users").document(uid).collection("goals").document(goal_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    ref.update({"done": update.done})
+    return {"id": goal_id, **ref.get().to_dict()}
+
+
+@app.delete("/goals/{goal_id}", status_code=204)
+def delete_goal(goal_id: str, user=Depends(verify_token)):
+    uid = user["uid"]
+    ref = db.collection("users").document(uid).collection("goals").document(goal_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    ref.delete()
+
+
+# -------- SESSION ROUTES -------- #
 
 @app.post("/sessions")
 def create_session(session: Session):
     try:
-        new_session = {
-            "subject": session.subject,
-            "date": session.date,
-            "duration": session.duration
-        }
-
-        doc_ref = db.collection("sessions").add(new_session)
-
-        return {
-            "id": doc_ref[1].id,
-            **new_session
-        }
-
+        data = {"subject": session.subject, "date": session.date, "duration": session.duration}
+        doc_ref = db.collection("sessions").add(data)
+        return {"id": doc_ref[1].id, **data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -100,16 +139,8 @@ def create_session(session: Session):
 @app.get("/sessions")
 def get_sessions():
     try:
-        sessions = []
         docs = db.collection("sessions").stream()
-
-        for doc in docs:
-            data = doc.to_dict()
-            data["id"] = doc.id
-            sessions.append(data)
-
-        return sessions
-
+        return [{"id": doc.id, **doc.to_dict()} for doc in docs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -119,14 +150,14 @@ def delete_session(session_id: str):
     try:
         db.collection("sessions").document(session_id).delete()
         return {"message": "Deleted"}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Root / Frontend
+# -------- FRONTEND STATIC SERVING -------- #
+
 @app.get("/")
 def home():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="frontend")
