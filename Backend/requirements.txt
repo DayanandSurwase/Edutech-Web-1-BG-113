@@ -3,4 +3,9 @@ uvicorn
 python-jose
 passlib[bcrypt]
 groq
+firebase-admin
 python-dotenv
+requests
+pydantic
+PyJWT
+google-cloud-firestore

@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Any
 from groq import Groq
+from dotenv import load_dotenv
 import firebase_config
 from firebase_admin import auth
 from firebase_config import db
@@ -16,11 +17,10 @@ from auth import verify_token
 
 # Load Groq key from Backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL   = os.environ.get("GROQ_MODEL", "llama3-8b-8192")
-
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+load_dotenv()
 app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,7 +32,7 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "Frontend")
 
-FIREBASE_API_KEY = "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw"
+FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyAdMrUTEZ0oghKVzlxB0WCxwB1-5KZPRqw")
 
 # -------- MODELS -------- #
 class UserSignup(BaseModel):
